@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot Mockup</title>
+    <style>
+        /* --- Глобальні змінні та стилі --- */
+        :root {
+            --font-primary: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --color-bg-primary: #313338;
+            --color-bg-secondary: #2b2d31;
+            --color-bg-tertiary: #1e1f22;
+            --color-bg-modal: #383a40;
+            --color-bg-interactive: #4f545c;
+            --color-bg-interactive-hover: #5d6269;
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #dcddde;
+            --color-text-muted: #b0b3b8;
+            --color-text-link: #5865f2;
+            --color-border: #40444b;
+            --color-embed-border: #4f545c;
+            --color-button-primary: #5865f2;
+            --color-button-primary-hover: #4752c4;
+            --color-button-secondary: #4f545c;
+            --color-button-secondary-hover: #5d6269;
+            --color-button-green: #3ba55d;
+            --color-button-red: #d83c3e;
+            --color-button-disabled: #3e4046;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-secondary);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Бічна панель (навігація) --- */
+        .sidebar {
+            width: 240px;
+            background-color: var(--color-bg-secondary);
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar h3 {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sidebar-nav a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background-color: var(--color-bg-interactive);
+            color: var(--color-text-primary);
+        }
+        .sidebar-nav a.admin-command {
+            color: #faa61a; /* Колір для адмін-команд */
+        }
+
+        /* --- Основний контент (чат) --- */
+        .main-content {
+            flex-grow: 1;
+            background-color: var(--color-bg-primary);
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .view {
+            display: none; /* Всі "екрани" сховані за замовчуванням */
+        }
+        .view.active {
+            display: block; /* Активний екран видимий */
+        }
+
+        /* --- Стилізація Discord Embed --- */
+        .discord-message {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--color-button-primary);
+            margin-right: 15px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .message-content {
+            flex-grow: 1;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .username {
+            color: var(--color-text-primary);
+            font-weight: 500;
+        }
+        .bot-tag {
+            background-color: var(--color-button-primary);
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .timestamp {
+            color: var(--color-text-muted);
+            font-size: 12px;
+        }
+
+        .discord-embed {
+            background-color: var(--color-bg-secondary);
+            border-left: 4px solid var(--color-embed-border);
+            border-radius: 4px;
+            padding: 12px 16px;
+            max-width: 600px;
+        }
+        .embed-title {
+            color: var(--color-text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .embed-description {
+            font-size: 14px;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+        .embed-fields {
+            display: grid;
+            gap: 10px;
+        }
+        .embed-field {
+            font-size: 14px;
+        }
+        .embed-field-name {
+            color: var(--color-text-primary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .embed-field-value {
+            white-space: pre-wrap;
+        }
+        .embed-image-placeholder {
+            width: 100%;
+            height: 150px;
+            background-color: var(--color-bg-tertiary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            font-style: italic;
+            margin-top: 10px;
+        }
+        .code-block {
+            background-color: var(--color-bg-tertiary);
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* --- Компоненти (Кнопки, Списки) --- */
+        .discord-components {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .discord-button-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .discord-button {
+            background-color: var(--color-button-secondary);
+            color: var(--color-text-primary);
+            border: none;
+            border-radius: 3px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.17s ease;
+        }
+        .discord-button:hover {
+            background-color: var(--color-button-secondary-hover);
+        }
+        .discord-button.primary {
+            background-color: var(--color-button-primary);
+        }
+        .discord-button.primary:hover {
+            background-color: var(--color-button-primary-hover);
+        }
+        .discord-button.green {
+            background-color: var(--color-button-green);
+        }
+        .discord-button.red {
+            background-color: var(--color-button-red);
+        }
+        .discord-button.link {
+            background-color: var(--color-button-secondary);
+            text-decoration: none;
+        }
+        .discord-button:disabled {
+            background-color: var(--color-button-disabled);
+            color: var(--color-text-muted);
+            cursor: not-allowed;
+        }
+
+        .discord-select-menu {
+            background-color: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 3px;
+            padding: 8px 10px;
+            color: var(--color-text-secondary);
+            width: 100%;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .discord-select-menu:focus {
+            outline: none;
+            border-color: var(--color-text-link);
+        }
+        .discord-select-menu option {
+            background-color: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+        }
+
+        /* --- Стилізація Модальних Вікон --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Сховано */
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex; /* Показано */
+        }
+        .modal-content {
+            background-color: var(--color-bg-modal);
+            border-radius: 5px;
+            width: 90%;
+            max-width: 440px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .modal-header {
+            color: var(--color-text-primary);
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal-form-label {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .modal-text-input,
+        .modal-select {
+            background-color: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 3px;
+            padding: 10px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box; /* Важливо для padding */
+        }
+        .modal-text-input.long {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h3>Користувач</h3>
+        <div class="sidebar-nav">
+            <a href="#" class="nav-link active" data-target="view-profile">/profile</a>
+            <a href="#" class="nav-link" data-target="view-catalog">/catalog</a>
+            <a href="#" class="nav-link" data-target="view-generate">/generate</a>
+            <a href="#" class="nav-link" data-target="view-balance">/balance</a>
+            <a href="#" class="nav-link" data-target="view-payments">/payments</a>
+            <a href="#" class="nav-link" data-target="view-history">/history</a>
+        </div>
+        <br>
+        <h3>Адмін Сервера</h3>
+        <div class="sidebar-nav">
+            <a href="#" class="nav-link admin-command" data-target="view-admin-model">/admin model</a>
+            <a href="#" class="nav-link admin-command" data-target="view-admin-user">/admin user</a>
+            <a href="#" class="nav-link admin-command" data-target="view-admin-tariffs">/admin tariffs</a>
+            <a href="#" class="nav-link admin-command" data-target="view-admin-logs">/admin logs</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="discord-message">
+            <div class="avatar" style="background-color: #7289da;">U</div>
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="username">@username</span>
+                    <span class="timestamp">Сьогодні о 11:40</span>
+                </div>
+                <div class="command-call" style="color: #b0b3b8;">
+                    Використав <code style="background: #2b2d31; padding: 1px 4px; border-radius: 3px;">/profile</code>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-profile" class="view active">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                        <span class="timestamp">Сьогодні о 11:40</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">👤 Ваш Профіль (@username)</div>
+                        <div class="embed-description">Інформація про ваш акаунт та баланс.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-name">Баланс</div>
+                                <div class="embed-field-value">$10.50 (1050 кредитів)</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">Email (для сповіщень)</div>
+                                <div class="embed-field-value">user@example.com</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">Дата реєстрації</div>
+                                <div class="embed-field-value">01.10.2025</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                            <button class="discord-button green modal-trigger" data-target="modal-balance">💰 Поповнити баланс</button>
+                            <button class="discord-button secondary nav-link" data-target="view-payments">📜 Історія платежів</button>
+                            <button class="discord-button secondary nav-link" data-target="view-history">🖼️ Мої генерації</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-catalog" class="view">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">🎨 Каталог Моделей (Сторінка 1/3)</div>
+                        <div class="embed-description">Оберіть модель, щоб дізнатися деталі та запустити генерацію.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-name">🖼️ Stable Diffusion XL (Image)</div>
+                                <div class="embed-field-value">Високоякісна генерація зображень з текстового опису.</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">✍️ Llama 3 (Text)</div>
+                                <div class="embed-field-value">Потужна мовна модель для генерації та аналізу тексту.</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">🎵 Suno v3 (Audio)</div>
+                                <div class="embed-field-value">Створення музики та аудіо за вашим запитом.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <select class="discord-select-menu">
+                            <option selected disabled>Фільтрувати за типом</option>
+                            <option>Всі типи</option>
+                            <option>Image</option>
+                            <option>Text</option>
+                            <option>Audio</option>
+                        </select>
+                        <select class="discord-select-menu">
+                            <option selected disabled>Оберіть модель для деталей</option>
+                            <option>Stable Diffusion XL</option>
+                            <option>Llama 3</option>
+                            <option>Suno v3</option>
+                        </select>
+                         <div class="discord-button-row">
+                            <button class="discord-button secondary" disabled>⬅️ Назад</button>
+                            <button class="discord-button secondary">Вперед ➡️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-generate" class="view">
+            <button class="discord-button primary modal-trigger" data-target="modal-generate" style="margin-bottom: 20px;">
+                🚀 Викликати /generate (без опцій)
+            </button>
+            
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">⏳ Генерація в процесі...</div>
+                        <div class="embed-description">Ваш запит прийнято в чергу. Це може зайняти кілька хвилин.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-name">Модель</div>
+                                <div class="embed-field-value">Stable Diffusion XL</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">Промт</div>
+                                <div class="embed-field-value">A beautiful landscape...</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">Статус</div>
+                                <div class="embed-field-value">В черзі (Позиція: 3)</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">Вартість (орієнтовно)</div>
+                                <div class="embed-field-value">5 кредитів</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                            <button class="discord-button secondary" disabled>Скасувати</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-balance" class="view">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">💰 Ваш Баланс</div>
+                        <div class="embed-description">Ваш поточний баланс: $10.50 (1050 кредитів)</div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                            <button class="discord-button green modal-trigger" data-target="modal-balance">💰 Поповнити баланс</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="discord-message" style="display: none;" id="payment-invoice-embed">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">🧾 Рахунок на оплату</div>
+                        <div class="embed-description">Натисніть кнопку нижче, щоб перейти до оплати $10.00 через нашого платіжного партнера.</div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                            <a href="#" class="discord-button link primary" target="_blank">Перейти до оплати ➡️</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-payments" class="view">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">📜 Історія платежів (Сторінка 1/2)</div>
+                        <div class="embed-description">Список ваших останніх транзакцій.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-name">[Дата] (ID: ...123): +$10.00 (Статус: Успішно)</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">[Дата] (ID: ...456): -5 кредитів (Генерація ID: ...abc)</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">[Дата] (ID: ...789): +$5.00 (Статус: Успішно)</div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="discord-components">
+                         <div class="discord-button-row">
+                            <button class="discord-button secondary" disabled>⬅️ Назад</button>
+                            <button class="discord-button secondary">Вперед ➡️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-history" class="view">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">🖼️ Історія Генерацій (Сторінка 1/5)</div>
+                        <div class="embed-description">Ваші останні згенеровані медіа.</div>
+                        <div class="embed-image-placeholder">[Колаж з 4-6 прев'ю]</div>
+                        <div class="embed-fields" style="margin-top: 12px;">
+                            <div class="embed-field">
+                                <div class="embed-field-name">ID: ...1a2b (Image)</div>
+                                <div class="embed-field-value">A beautiful landscape...</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-name">ID: ...3c4d (Text)</div>
+                                <div class="embed-field-value">Summary of a long article...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <select class="discord-select-menu">
+                            <option selected disabled>Обрати генерацію для деталей</option>
+                            <option>ID: ...1a2b</option>
+                            <option>ID: ...3c4d</option>
+                        </select>
+                         <div class="discord-button-row">
+                            <button class="discord-button secondary" disabled>⬅️ Назад</button>
+                            <button class="discord-button secondary">Вперед ➡️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-admin-model" class="view">
+            <button class="discord-button primary modal-trigger" data-target="modal-admin-model" style="margin-bottom: 20px;">
+                ➕ Додати нову модель
+            </button>
+
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">📋 Список Моделей (Всього: 5)</div>
+                        <div class="embed-description">Поточні моделі, доступні користувачам.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-value">ID: <b>sdxl-1.0</b> (Image): Stable Diffusion XL (5 кредитів)</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-value">ID: <b>llama3</b> (Text): Llama 3 (2 кредити)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <select class="discord-select-menu">
+                            <option selected disabled>Редагувати модель...</option>
+                            <option>sdxl-1.0</option>
+                            <option>llama3</option>
+                        </select>
+                        <select class="discord-select-menu">
+                            <option selected disabled>Видалити модель...</option>
+                            <option>sdxl-1.0</option>
+                            <option>llama3</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-admin-user" class="view">
+             <div style="color: var(--color-text-muted); margin-bottom: 15px; font-style: italic;">
+                Запит: /admin user lookup: @username
+             </div>
+
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">🕵️ Адмін-профіль: @username</div>
+                        <div class="embed-description">Детальна інформація про користувача.</div>
+                        <div class="embed-fields">
+                             <div class="embed-field"><div class="embed-field-name">ID</div><div class="embed-field-value">123456789012345678</div></div>
+                             <div class="embed-field"><div class="embed-field-name">Email</div><div class="embed-field-value">user@example.com</div></div>
+                             <div class="embed-field"><div class="embed-field-name">Баланс</div><div class="embed-field-value">1050 кредитів</div></div>
+                             <div class="embed-field"><div class="embed-field-name">Всього поповнень</div><div class="embed-field-value">$50.00</div></div>
+                             <div class="embed-field"><div class="embed-field-name">Всього генерацій</div><div class="embed-field-value">150</div></div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                            <button class="discord-button primary modal-trigger" data-target="modal-admin-balance">💸 Змінити баланс</button>
+                            <button class="discord-button secondary">📜 Повна історія платежів</button>
+                            <button class="discord-button secondary">🖼️ Повна історія генерацій</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-admin-tariffs" class="view">
+            <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">💲 Тарифні Плани</div>
+                        <div class="embed-description">Поточні плани для поповнення балансу.</div>
+                        <div class="embed-fields">
+                            <div class="embed-field">
+                                <div class="embed-field-value"><b>План 1 ($5):</b> 500 кредитів</div>
+                            </div>
+                            <div class="embed-field">
+                                <div class="embed-field-value"><b>План 2 ($10):</b> 1100 кредитів (10% бонус)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <div class="discord-button-row">
+                             <button class="discord-button green modal-trigger" data-target="modal-admin-tariff">➕ Додати план</button>
+                        </div>
+                        <select class="discord-select-menu">
+                            <option selected disabled>Редагувати план...</option>
+                            <option>План 1 ($5)</option>
+                            <option>План 2 ($10)</option>
+                        </select>
+                        <select class="discord-select-menu">
+                            <option selected disabled>Видалити план...</option>
+                            <option>План 1 ($5)</option>
+                            <option>План 2 ($10)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-admin-logs" class="view">
+             <div class="discord-message">
+                <div class="avatar">Bot</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="username">AI Bot</span>
+                        <span class="bot-tag">BOT</span>
+                    </div>
+                    <div class="discord-embed">
+                        <div class="embed-title">📜 Логи: errors (Останні 25 рядків)</div>
+                        <div class="embed-description code-block">
+[2025-11-01 11:39:01] ERROR: Payment provider timeout for user 123456
+[2025-11-01 11:38:45] INFO: User 123456 generated image (ID: ...1a2b)
+[2025-11-01 11:38:10] WARN: API latency high for model sdxl-1.0 (3500ms)
+[2025-11-01 11:37:05] INFO: User 987654 requested /profile
+[2025-11-01 11:36:00] ERROR: Invalid prompt detected (policy violation) for user 123456
+                        </div>
+                    </div>
+                    <div class="discord-components">
+                        <select class="discord-select-menu">
+                            <option selected disabled>Обрати тип логів</option>
+                            <option>errors</option>
+                            <option>api</option>
+                            <option>payments</option>
+                            <option>all</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div> <div class="modal-overlay" id="modal-generate">
+        <div class="modal-content">
+            <div class="modal-header">🚀 Нова Генерація</div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-form-label">Модель</div>
+                    <select class="modal-select">
+                        <option>Stable Diffusion XL</option>
+                        <option>Llama 3</option>
+                        <option>Suno v3</option>
+                    </select>
+                </div>
+                 <div>
+                    <div class="modal-form-label">Промт</div>
+                    <textarea class="modal-text-input long" placeholder="A beautiful landscape..."></textarea>
+                </div>
+                 <div>
+                    <div class="modal-form-label">Негативний промт (опціонально)</div>
+                    <input type="text" class="modal-text-input" placeholder="blurry, ugly, bad art...">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Додаткові параметри (опціонально)</div>
+                    <input type="text" class="modal-text-input" placeholder="--width 1024 --seed 123">
+                </div>
+                 <div>
+                    <div class="modal-form-label">URL референсу (опціонально)</div>
+                    <input type="text" class="modal-text-input" placeholder="https://example.com/image.png">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="discord-button secondary modal-close">Скасувати</button>
+                <button class="discord-button green modal-close">Відправити</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-balance">
+        <div class="modal-content">
+            <div class="modal-header">💳 Поповнення балансу</div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-form-label">Оберіть пакет</div>
+                    <select class="modal-select">
+                        <option>$5 (500 кредитів)</option>
+                        <option>$10 (1100 кредитів - 10% бонус)</option>
+                        <option>$25 (3000 кредитів - 20% бонус)</option>
+                    </select>
+                </div>
+                <div style="text-align: center; color: var(--color-text-muted); font-size: 14px;">...або...</div>
+                 <div>
+                    <div class="modal-form-label">Сума (USD)</div>
+                    <input type="text" class="modal-text-input" placeholder="10">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="discord-button secondary modal-close">Скасувати</button>
+                <button class="discord-button green modal-close" id="submit-payment">Оплатити</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-admin-model">
+        <div class="modal-content">
+            <div class="modal-header">➕ Додати нову модель</div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-form-label">ID Моделі (внутрішня назва)</div>
+                    <input type="text" class="modal-text-input" placeholder="sdxl-1.0">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Назва для користувачів</div>
+                    <input type="text" class="modal-text-input" placeholder="Stable Diffusion XL">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Тип</div>
+                    <select class="modal-select">
+                        <option>Image</option>
+                        <option>Text</option>
+                        <option>Audio</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="modal-form-label">Опис</div>
+                    <textarea class="modal-text-input long" placeholder="Короткий опис..."></textarea>
+                </div>
+                 <div>
+                    <div class="modal-form-label">Вартість (кредити)</div>
+                    <input type="number" class="modal-text-input" placeholder="5">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="discord-button secondary modal-close">Скасувати</button>
+                <button class="discord-button green modal-close">Додати</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-admin-balance">
+        <div class="modal-content">
+            <div class="modal-header">💸 Зміна балансу для @username</div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-form-label">Сума (кредити)</div>
+                    <input type="text" class="modal-text-input" placeholder="100 або -50">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Причина</div>
+                    <input type="text" class="modal-text-input" placeholder="Бонус за активність або Компенсація">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="discord-button secondary modal-close">Скасувати</button>
+                <button class="discord-button green modal-close">Застосувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-admin-tariff">
+        <div class="modal-content">
+            <div class="modal-header">✏️ Редагувати Тарифний План</div>
+            <div class="modal-body">
+                <div>
+                    <div class="modal-form-label">Назва плану</div>
+                    <input type="text" class="modal-text-input" placeholder="Basic USD 10">
+                </div>
+                <div>
+                    <div class="modal-form-label">Ціна (USD)</div>
+                    <input type="number" class="modal-text-input" placeholder="10">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Кількість кредитів</div>
+                    <input type="number" class="modal-text-input" placeholder="1100">
+                </div>
+                 <div>
+                    <div class="modal-form-label">Опис</div>
+                    <input type="text" class="modal-text-input" placeholder="10% бонус!">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="discord-button secondary modal-close">Скасувати</button>
+                <button class="discord-button green modal-close">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+            const views = document.querySelectorAll('.main-content .view');
+            const modalTriggers = document.querySelectorAll('.modal-trigger');
+            const modalOverlays = document.querySelectorAll('.modal-overlay');
+            const modalCloses = document.querySelectorAll('.modal-close');
+
+            // --- Навігація в бічній панелі ---
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Отримуємо ціль з data-target
+                    const targetId = link.getAttribute('data-target');
+                    const targetView = document.getElementById(targetId);
+
+                    // Скидаємо активний стан
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    views.forEach(view => view.classList.remove('active'));
+
+                    // Встановлюємо активний стан
+                    link.classList.add('active');
+                    if (targetView) {
+                        targetView.classList.add('active');
+                    }
+                });
+            });
+
+            // --- Логіка Модальних Вікон ---
+
+            // Відкриття модального вікна
+            modalTriggers.forEach(trigger => {
+                trigger.addEventListener('click', () => {
+                    const targetId = trigger.getAttribute('data-target');
+                    const targetModal = document.getElementById(targetId);
+                    if (targetModal) {
+                        targetModal.classList.add('active');
+                    }
+                });
+            });
+
+            // Закриття модального вікна (кнопка "Скасувати", "Відправити" тощо)
+            modalCloses.forEach(button => {
+                button.addEventListener('click', () => {
+                    button.closest('.modal-overlay').classList.remove('active');
+                });
+            });
+
+            // Закриття модального вікна (клік на фон)
+            modalOverlays.forEach(overlay => {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.classList.remove('active');
+                    }
+                });
+            });
+
+            // --- Спеціальна логіка для /balance ---
+            const submitPaymentButton = document.getElementById('submit-payment');
+            const paymentInvoiceEmbed = document.getElementById('payment-invoice-embed');
+
+            if (submitPaymentButton) {
+                submitPaymentButton.addEventListener('click', () => {
+                    // Показуємо embed рахунку, коли модальне вікно закривається
+                    paymentInvoiceEmbed.style.display = 'flex';
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
